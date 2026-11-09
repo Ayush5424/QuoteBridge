@@ -37,17 +37,8 @@ export const SupplierQuotePage: React.FC = () => {
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    const quotes = StorageService.getQuotes();
-    let currentQuote: QuoteRequest | undefined;
-
-    if (id) {
-      currentQuote = quotes.find((q) => q.id === id || q.rfqNumber === id);
-    }
-    if (!currentQuote && quotes.length > 0) {
-      currentQuote = quotes[0]; // fallback to first quote
-    }
-
-    if (currentQuote) {
+    const handleQuoteLoad = (currentQuote: QuoteRequest | undefined) => {
+      if (!currentQuote) return;
       setQuote(currentQuote);
 
       // Check if this quote already has a response from this supplier
@@ -84,6 +75,26 @@ export const SupplierQuotePage: React.FC = () => {
         setAltProduct(existingResp.alternativeProduct);
         setShowAlternative(true);
       }
+    };
+
+    const quotes = StorageService.getQuotes();
+    let currentQuote: QuoteRequest | undefined;
+
+    if (id) {
+      currentQuote = quotes.find((q) => q.id === id || q.rfqNumber === id);
+    }
+    if (!currentQuote && quotes.length > 0) {
+      currentQuote = quotes[0];
+    }
+
+    if (currentQuote) {
+      handleQuoteLoad(currentQuote);
+    }
+
+    if (id) {
+      StorageService.getQuoteByIdAsync(id).then((liveQuote) => {
+        if (liveQuote) handleQuoteLoad(liveQuote);
+      });
     }
   }, [id]);
 

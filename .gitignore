@@ -1,3 +1,8 @@
+# Java / Maven
+target/
+backend/target/
+*.class
+
 # Logs
 logs
 *.log

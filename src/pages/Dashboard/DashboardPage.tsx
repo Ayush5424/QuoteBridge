@@ -10,6 +10,11 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     setQuotes(StorageService.getQuotes());
+    StorageService.getQuotesAsync().then((liveQuotes) => {
+      if (liveQuotes && liveQuotes.length > 0) {
+        setQuotes(liveQuotes);
+      }
+    });
   }, []);
 
   // Compute live metrics

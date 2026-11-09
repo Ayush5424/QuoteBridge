@@ -22,18 +22,25 @@ export const QuoteComparisonPage: React.FC = () => {
     const allQuotes = StorageService.getQuotes();
     setQuotes(allQuotes);
 
-    let active: QuoteRequest | undefined;
-    if (quoteIdParam) {
-      active = allQuotes.find((q) => q.id === quoteIdParam || q.rfqNumber === quoteIdParam);
-    }
-    // Fallback to quotes that have multiple responses, or quote-2 (Workstation Tech)
-    if (!active) {
-      active = allQuotes.find((q) => q.responses && q.responses.length > 1) || allQuotes[1] || allQuotes[0];
-    }
+    const initActive = (list: QuoteRequest[]) => {
+      let active: QuoteRequest | undefined;
+      if (quoteIdParam) {
+        active = list.find((q) => q.id === quoteIdParam || q.rfqNumber === quoteIdParam);
+      }
+      if (!active) {
+        active = list.find((q) => q.responses && q.responses.length > 1) || list[1] || list[0];
+      }
+      if (active) setSelectedQuote(active);
+    };
 
-    if (active) {
-      setSelectedQuote(active);
-    }
+    initActive(allQuotes);
+
+    StorageService.getQuotesAsync().then((live) => {
+      if (live && live.length > 0) {
+        setQuotes(live);
+        initActive(live);
+      }
+    });
   }, [quoteIdParam]);
 
   if (!selectedQuote) {

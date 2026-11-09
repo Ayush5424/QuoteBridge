@@ -14,6 +14,9 @@ export const QuoteHistoryPage: React.FC = () => {
 
   useEffect(() => {
     setQuotes(StorageService.getQuotes());
+    StorageService.getQuotesAsync().then((live) => {
+      if (live && live.length > 0) setQuotes(live);
+    });
   }, []);
 
   // Filter & Search Logic

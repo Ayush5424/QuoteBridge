@@ -1,4 +1,5 @@
 import { QuoteRequest, Order, SupplierResponse } from '../types';
+import { api } from './api';
 
 const QUOTES_STORAGE_KEY = 'quotebridge_quotes_v1';
 const ORDERS_STORAGE_KEY = 'quotebridge_orders_v1';
@@ -376,17 +377,66 @@ export const StorageService = {
       const data = localStorage.getItem(QUOTES_STORAGE_KEY);
       if (!data) {
         localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(initialQuotes));
+        // Asynchronously hydrate from backend
+        this.syncQuotesFromBackend();
         return initialQuotes;
       }
+      // Trigger background sync
+      this.syncQuotesFromBackend();
       return JSON.parse(data);
     } catch {
       return initialQuotes;
     }
   },
 
+  async syncQuotesFromBackend(): Promise<QuoteRequest[]> {
+    try {
+      const backendQuotes = await api.getQuotations();
+      if (backendQuotes && backendQuotes.length > 0) {
+        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(backendQuotes));
+        return backendQuotes;
+      }
+    } catch (e) {
+      // Backend offline or unreachable, retain localStorage cache
+      console.warn('Backend sync unreachable, using local cache', e);
+    }
+    return this.getQuotes();
+  },
+
+  async getQuotesAsync(): Promise<QuoteRequest[]> {
+    try {
+      const quotes = await api.getQuotations();
+      if (quotes && quotes.length > 0) {
+        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+        return quotes;
+      }
+    } catch {
+      // fallback
+    }
+    return this.getQuotes();
+  },
+
   getQuoteById(id: string): QuoteRequest | undefined {
     const quotes = this.getQuotes();
     return quotes.find((q) => q.id === id || q.rfqNumber === id);
+  },
+
+  async getQuoteByIdAsync(id: string): Promise<QuoteRequest | undefined> {
+    try {
+      const quote = await api.getQuoteById(id);
+      if (quote) {
+        // update cache
+        const quotes = this.getQuotes();
+        const idx = quotes.findIndex((q) => q.id === quote.id || q.rfqNumber === quote.rfqNumber);
+        if (idx >= 0) quotes[idx] = quote;
+        else quotes.unshift(quote);
+        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+        return quote;
+      }
+    } catch {
+      // fallback
+    }
+    return this.getQuoteById(id);
   },
 
   saveQuote(quote: QuoteRequest): QuoteRequest {
@@ -398,7 +448,24 @@ export const StorageService = {
       quotes.unshift(quote);
     }
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+
+    // Send to backend asynchronously
+    api.createQuotation(quote).catch((err) => console.warn('Could not persist quotation to backend', err));
+
     return quote;
+  },
+
+  async saveQuoteAsync(quote: Partial<QuoteRequest>): Promise<QuoteRequest> {
+    try {
+      const created = await api.createQuotation(quote);
+      const quotes = this.getQuotes();
+      quotes.unshift(created);
+      localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+      return created;
+    } catch (e) {
+      console.warn('Failed to save to backend, saving locally', e);
+      return this.saveQuote(quote as QuoteRequest);
+    }
   },
 
   updateQuoteStatus(id: string, status: QuoteRequest['status']): QuoteRequest | undefined {
@@ -407,6 +474,7 @@ export const StorageService = {
     if (quote) {
       quote.status = status;
       localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+      api.updateQuoteStatus(id, status).catch(() => {});
     }
     return quote;
   },
@@ -421,13 +489,27 @@ export const StorageService = {
       } else {
         quote.responses.push(response);
       }
-      // If quote was pending and now has responses, mark status as Received
       if (quote.status === 'Pending' || quote.status === 'Draft') {
         quote.status = 'Received';
       }
       localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
     }
+
+    // Persist to backend
+    api.submitSupplierResponse(quoteId, response).catch((err) => console.warn('Failed to submit response to backend', err));
+
     return quote;
+  },
+
+  async addSupplierResponseAsync(quoteId: string, response: Partial<SupplierResponse>): Promise<SupplierResponse> {
+    try {
+      const res = await api.submitSupplierResponse(quoteId, response);
+      await this.syncQuotesFromBackend();
+      return res;
+    } catch (e) {
+      this.addSupplierResponse(quoteId, response as SupplierResponse);
+      return response as SupplierResponse;
+    }
   },
 
   getOrders(): Order[] {
@@ -435,12 +517,40 @@ export const StorageService = {
       const data = localStorage.getItem(ORDERS_STORAGE_KEY);
       if (!data) {
         localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(initialOrders));
+        this.syncOrdersFromBackend();
         return initialOrders;
       }
+      this.syncOrdersFromBackend();
       return JSON.parse(data);
     } catch {
       return initialOrders;
     }
+  },
+
+  async syncOrdersFromBackend(): Promise<Order[]> {
+    try {
+      const backendOrders = await api.getOrders();
+      if (backendOrders && backendOrders.length > 0) {
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(backendOrders));
+        return backendOrders;
+      }
+    } catch {
+      // ignore
+    }
+    return this.getOrders();
+  },
+
+  async getOrdersAsync(): Promise<Order[]> {
+    try {
+      const orders = await api.getOrders();
+      if (orders && orders.length > 0) {
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+        return orders;
+      }
+    } catch {
+      // fallback
+    }
+    return this.getOrders();
   },
 
   getOrderById(id: string): Order | undefined {
@@ -448,24 +558,61 @@ export const StorageService = {
     return orders.find((o) => o.id === id || o.orderNumber === id);
   },
 
+  async getOrderByIdAsync(id: string): Promise<Order | undefined> {
+    try {
+      const order = await api.getOrderById(id);
+      if (order) return order;
+    } catch {
+      // fallback
+    }
+    return this.getOrderById(id);
+  },
+
   getOrderByQuoteId(quoteId: string): Order | undefined {
     const orders = this.getOrders();
     return orders.find((o) => o.quoteId === quoteId);
   },
 
+  async getOrderByQuoteIdAsync(quoteId: string): Promise<Order | undefined> {
+    try {
+      const order = await api.getOrderByQuoteId(quoteId);
+      if (order) return order;
+    } catch {
+      // fallback
+    }
+    return this.getOrderByQuoteId(quoteId);
+  },
+
   createOrder(order: Order): Order {
     const orders = this.getOrders();
-    // Prevent duplicate orders
     const existing = orders.find((o) => o.quoteId === order.quoteId && o.responseId === order.responseId);
     if (existing) {
       return existing;
     }
     orders.unshift(order);
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
-
-    // Update quote status to Accepted
     this.updateQuoteStatus(order.quoteId, 'Accepted');
+
+    // Persist to backend
+    api.createOrder(order).catch((err) => console.warn('Failed to save order to backend', err));
+
     return order;
+  },
+
+  async createOrderAsync(order: Partial<Order>): Promise<Order> {
+    try {
+      const res = await api.createOrder(order);
+      const orders = this.getOrders();
+      orders.unshift(res);
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+      if (order.quoteId) {
+        this.updateQuoteStatus(order.quoteId, 'Accepted');
+      }
+      return res;
+    } catch (e) {
+      console.warn('Failed to create order on backend, creating locally', e);
+      return this.createOrder(order as Order);
+    }
   },
 
   resetDefaults(): void {
