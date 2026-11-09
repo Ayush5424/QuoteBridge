@@ -42,7 +42,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderDto createOrder(CreateOrderRequestDto dto, User currentUser) {
+    public OrderDto createOrder(CreateOrderRequestDto dto) {
         QuotationRequest quote = quotationRequestRepository.findById(dto.getQuoteId())
                 .or(() -> quotationRequestRepository.findByRfqNumber(dto.getQuoteId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found: " + dto.getQuoteId()));

@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,8 +28,6 @@ class QuotationServiceTest {
     private QuotationRequestRepository quotationRepository;
     @Mock
     private OrganizationRepository organizationRepository;
-    @Mock
-    private OrganizationMembershipRepository membershipRepository;
     @Mock
     private SupplierRepository supplierRepository;
     @Mock
@@ -62,7 +59,7 @@ class QuotationServiceTest {
     void testCreateQuotation_Success() {
         when(quotationRepository.save(any(QuotationRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        QuoteRequestDto result = quotationService.createQuotation(requestDto, null);
+        QuoteRequestDto result = quotationService.createQuotation(requestDto);
 
         assertNotNull(result);
         assertEquals("Organic Gala Apples bulk request", result.getTitle());

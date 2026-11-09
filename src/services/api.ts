@@ -9,21 +9,6 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
-export interface UserProfile {
-  id: string;
-  fullName: string;
-  email: string;
-  role: 'BUYER' | 'SUPPLIER' | 'ADMIN';
-  organizationId: string;
-  organizationName: string;
-}
-
-export interface AuthResponseData {
-  token: string;
-  type: string;
-  user: UserProfile;
-}
-
 export interface DashboardSummaryData {
   activeRequestsCount: number;
   waitingResponseCount: number;
@@ -56,36 +41,12 @@ export interface ComparisonSummaryData {
 }
 
 class ApiService {
-  private token: string | null = null;
-
-  constructor() {
-    this.token = localStorage.getItem('qb_auth_token');
-  }
-
-  public setToken(token: string | null) {
-    this.token = token;
-    if (token) {
-      localStorage.setItem('qb_auth_token', token);
-    } else {
-      localStorage.removeItem('qb_auth_token');
-    }
-  }
-
-  public getToken(): string | null {
-    return this.token || localStorage.getItem('qb_auth_token');
-  }
-
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...((options.headers as Record<string, string>) || {}),
     };
-
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -105,37 +66,6 @@ class ApiService {
 
     const json: ApiResponse<T> = await response.json();
     return json.data;
-  }
-
-  // Auth Endpoints
-  async login(email: string, password: string): Promise<AuthResponseData> {
-    const data = await this.request<AuthResponseData>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    this.setToken(data.token);
-    return data;
-  }
-
-  async register(registerData: {
-    fullName: string;
-    email: string;
-    password: string;
-    role: 'BUYER' | 'SUPPLIER';
-    organizationName: string;
-    contactPhone?: string;
-    address?: string;
-  }): Promise<AuthResponseData> {
-    const data = await this.request<AuthResponseData>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(registerData),
-    });
-    this.setToken(data.token);
-    return data;
-  }
-
-  async getCurrentUser(): Promise<UserProfile> {
-    return this.request<UserProfile>('/auth/me');
   }
 
   // Dashboard Endpoint

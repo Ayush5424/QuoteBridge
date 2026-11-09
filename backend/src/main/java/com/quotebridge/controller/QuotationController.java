@@ -1,6 +1,5 @@
 package com.quotebridge.controller;
 
-import com.quotebridge.domain.entity.User;
 import com.quotebridge.domain.enums.QuoteStatus;
 import com.quotebridge.dto.common.ApiResponse;
 import com.quotebridge.dto.quotation.CreateQuoteRequestDto;
@@ -14,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -63,10 +61,9 @@ public class QuotationController {
     @PostMapping
     @Operation(summary = "Create a new quotation request")
     public ResponseEntity<ApiResponse<QuoteRequestDto>> createQuotation(
-            @Valid @RequestBody CreateQuoteRequestDto request,
-            @AuthenticationPrincipal User currentUser
+            @Valid @RequestBody CreateQuoteRequestDto request
     ) {
-        QuoteRequestDto created = quotationService.createQuotation(request, currentUser);
+        QuoteRequestDto created = quotationService.createQuotation(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Quotation request created successfully", created));
     }

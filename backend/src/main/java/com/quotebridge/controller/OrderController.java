@@ -1,6 +1,5 @@
 package com.quotebridge.controller;
 
-import com.quotebridge.domain.entity.User;
 import com.quotebridge.domain.enums.OrderStatus;
 import com.quotebridge.dto.common.ApiResponse;
 import com.quotebridge.dto.order.CreateOrderRequestDto;
@@ -14,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,10 +31,9 @@ public class OrderController {
     @PostMapping
     @Operation(summary = "Create and confirm a purchase order from an accepted quotation")
     public ResponseEntity<ApiResponse<OrderDto>> createOrder(
-            @Valid @RequestBody CreateOrderRequestDto request,
-            @AuthenticationPrincipal User currentUser
+            @Valid @RequestBody CreateOrderRequestDto request
     ) {
-        OrderDto created = orderService.createOrder(request, currentUser);
+        OrderDto created = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Purchase order confirmed successfully", created));
     }

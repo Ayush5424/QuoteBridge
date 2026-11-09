@@ -1,8 +1,5 @@
 -- V2__seed_initial_data.sql
--- Seed users, organizations, suppliers, quotations and orders
-
--- Password for all seed users is: password123
--- Hash: $2a$10$JNhJ6.fadCv0FdV5P4wFrOiGeJ6Yn/MwnWEBuLX6SVuC5ZjCp96Va
+-- Seed organizations, suppliers, quotations and orders
 
 INSERT INTO organizations (id, name, type, contact_email, contact_phone, address, status) VALUES
 ('org-freshmarket', 'FreshMarket Central', 'BUYER', 'procurement@freshmarket.com', '+1 (555) 234-5678', 'Building 7, Suite 300, Austin TX', 'ACTIVE'),
@@ -11,16 +8,6 @@ INSERT INTO organizations (id, name, type, contact_email, contact_phone, address
 ('org-globaltech', 'Global Tech Corp', 'SUPPLIER', 'sales@globaltechcorp.com', '+1 (555) 321-4455', 'Technology Way, Dallas TX', 'ACTIVE'),
 ('org-swift', 'Swift Logistics', 'SUPPLIER', 'elena@swiftlogistics.io', '+1 (555) 778-9900', 'Enterprise Park, Houston TX', 'ACTIVE'),
 ('org-metro', 'Metro Supplies', 'SUPPLIER', 'dvance@metrosupplies.com', '+1 (555) 441-2299', 'Metro Industrial Depot, Austin TX', 'ACTIVE');
-
-INSERT INTO users (id, full_name, email, password_hash, role, status) VALUES
-('user-alex', 'Alex Rivers', 'alex@freshmarket.com', '$2a$10$JNhJ6.fadCv0FdV5P4wFrOiGeJ6Yn/MwnWEBuLX6SVuC5ZjCp96Va', 'BUYER', 'ACTIVE'),
-('user-sarah', 'Sarah Jenkins', 'sarah@nexusglobal.com', '$2a$10$JNhJ6.fadCv0FdV5P4wFrOiGeJ6Yn/MwnWEBuLX6SVuC5ZjCp96Va', 'SUPPLIER', 'ACTIVE'),
-('user-admin', 'System Administrator', 'admin@quotebridge.com', '$2a$10$JNhJ6.fadCv0FdV5P4wFrOiGeJ6Yn/MwnWEBuLX6SVuC5ZjCp96Va', 'ADMIN', 'ACTIVE');
-
-INSERT INTO organization_memberships (id, organization_id, user_id, role_in_org) VALUES
-('mem-1', 'org-freshmarket', 'user-alex', 'PROCUREMENT_LEAD'),
-('mem-2', 'org-nexus', 'user-sarah', 'ACCOUNT_MANAGER'),
-('mem-3', 'org-freshmarket', 'user-admin', 'ADMIN');
 
 INSERT INTO suppliers (id, organization_id, supplier_tier, contact_name, contact_role, contact_email, contact_phone, status) VALUES
 ('sup-nexus', 'org-nexus', 'Verified Enterprise Partner', 'Sarah Jenkins', 'Account Manager', 's.jenkins@nexusglobal.com', '+1 (555) 902-1144', 'ACTIVE'),

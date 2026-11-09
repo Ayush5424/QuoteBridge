@@ -1,6 +1,5 @@
 package com.quotebridge.controller;
 
-import com.quotebridge.domain.entity.User;
 import com.quotebridge.dto.common.ApiResponse;
 import com.quotebridge.dto.quotation.QuotationResponseDto;
 import com.quotebridge.service.SupplierQuotationService;
@@ -9,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,10 +27,9 @@ public class SupplierQuotationController {
     @Operation(summary = "Submit a supplier response / quote for an RFQ")
     public ResponseEntity<ApiResponse<QuotationResponseDto>> submitResponse(
             @PathVariable String id,
-            @Valid @RequestBody QuotationResponseDto responseDto,
-            @AuthenticationPrincipal User currentUser
+            @Valid @RequestBody QuotationResponseDto responseDto
     ) {
-        QuotationResponseDto created = supplierQuotationService.submitQuotationResponse(id, responseDto, currentUser);
+        QuotationResponseDto created = supplierQuotationService.submitQuotationResponse(id, responseDto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Quotation response submitted successfully", created));
     }

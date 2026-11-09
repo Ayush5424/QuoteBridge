@@ -23,40 +23,28 @@ public class QuotationService {
 
     private final QuotationRequestRepository quotationRepository;
     private final OrganizationRepository organizationRepository;
-    private final OrganizationMembershipRepository membershipRepository;
     private final SupplierRepository supplierRepository;
     private final SupplierQuotationRepository supplierQuotationRepository;
 
     public QuotationService(QuotationRequestRepository quotationRepository,
                             OrganizationRepository organizationRepository,
-                            OrganizationMembershipRepository membershipRepository,
                             SupplierRepository supplierRepository,
                             SupplierQuotationRepository supplierQuotationRepository) {
         this.quotationRepository = quotationRepository;
         this.organizationRepository = organizationRepository;
-        this.membershipRepository = membershipRepository;
         this.supplierRepository = supplierRepository;
         this.supplierQuotationRepository = supplierQuotationRepository;
     }
 
     @Transactional
-    public QuoteRequestDto createQuotation(CreateQuoteRequestDto dto, User currentUser) {
+    public QuoteRequestDto createQuotation(CreateQuoteRequestDto dto) {
         if (dto.getProducts() == null || dto.getProducts().isEmpty()) {
             throw new BadRequestException("At least one product line item is required");
         }
 
         // Determine buyer organization
-        Organization buyerOrg = null;
-        if (currentUser != null) {
-            List<OrganizationMembership> memberships = membershipRepository.findByUserId(currentUser.getId());
-            if (!memberships.isEmpty()) {
-                buyerOrg = memberships.get(0).getOrganization();
-            }
-        }
-        if (buyerOrg == null) {
-            buyerOrg = organizationRepository.findById("org-freshmarket")
-                    .orElseGet(() -> organizationRepository.findAll().stream().findFirst().orElse(null));
-        }
+        Organization buyerOrg = organizationRepository.findById("org-freshmarket")
+                .orElseGet(() -> organizationRepository.findAll().stream().findFirst().orElse(null));
 
         String quoteId = "quote-" + UUID.randomUUID().toString().substring(0, 8);
         int randomSuffix = 1000 + new Random().nextInt(9000);

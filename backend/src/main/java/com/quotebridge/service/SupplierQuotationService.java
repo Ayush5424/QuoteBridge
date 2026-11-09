@@ -39,7 +39,7 @@ public class SupplierQuotationService {
     }
 
     @Transactional
-    public QuotationResponseDto submitQuotationResponse(String quoteId, QuotationResponseDto dto, User currentUser) {
+    public QuotationResponseDto submitQuotationResponse(String quoteId, QuotationResponseDto dto) {
         QuotationRequest quote = quotationRequestRepository.findById(quoteId)
                 .or(() -> quotationRequestRepository.findByRfqNumber(quoteId))
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found: " + quoteId));
